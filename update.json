@@ -1,5 +1,5 @@
-{
-  "version": "1.0.0",
+﻿{
+  "version": "1.1.0",
   "url": "https://github.com/etffmc-crypto/ClearSteps/raw/main/dist/ClearSteps.exe",
-  "notes": "First release: MW4 V1 tune (ArtTuneDB 2026.11-MW4)."
+  "notes": "New look that fills the window, plus the Guardian: a health check that watches your audio setup from the tray and fixes what Windows knocks out."
 }
