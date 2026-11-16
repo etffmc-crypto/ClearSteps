@@ -1,0 +1,47 @@
+{
+ "label": "ClassicLE-UltraLo-KU100",
+ "results": [
+  {
+   "test": "silence",
+   "L_dB": -180.0,
+   "R_dB": -180.0,
+   "peak_dB": -180.0
+  },
+  {
+   "test": "footsteps front-left (ch0)",
+   "L_dB": -38.8,
+   "R_dB": -42.6,
+   "peak_dB": -14.3
+  },
+  {
+   "test": "footsteps front-right (ch1)",
+   "L_dB": -43.0,
+   "R_dB": -38.6,
+   "peak_dB": -14.3
+  },
+  {
+   "test": "footsteps rear-left (ch4)",
+   "L_dB": -39.0,
+   "R_dB": -43.1,
+   "peak_dB": -14.2
+  },
+  {
+   "test": "footsteps rear-right (ch5)",
+   "L_dB": -43.1,
+   "R_dB": -39.6,
+   "peak_dB": -15.2
+  },
+  {
+   "test": "gunfire front L+R (ch0,1)",
+   "L_dB": -53.5,
+   "R_dB": -53.5,
+   "peak_dB": -33.5
+  },
+  {
+   "test": "steps rear-left + gun front",
+   "L_dB": -38.9,
+   "R_dB": -42.7,
+   "peak_dB": -14.4
+  }
+ ]
+}

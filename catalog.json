@@ -1,0 +1,68 @@
+{
+  "catalogVersion": 1,
+  "updated": "2026-11-16",
+  "source": {
+    "author": "ArtIsWar",
+    "video": "https://www.youtube.com/watch?v=9GRrP2UsRp4",
+    "videoTitle": "I Built a New Engine for MW4 | Free Warzone & DMZ Audio Guide",
+    "originalGuide": "https://youtu.be/EB1RYlNkXTw",
+    "repo": "https://github.com/ArtIsWar/ArtTuneDB",
+    "libraryRelease": "2026.11-MW4",
+    "installerUrl": "https://artiswar.io/tools/ArtTuneGuided",
+    "discord": "https://discord.gg/artiswar",
+    "paidApp": "https://artiswar.io/arttunekit"
+  },
+  "game": {
+    "id": "MW4",
+    "version": "V1",
+    "title": "MW4 V1 (Warzone, DMZ)",
+    "note": "Built for Warzone. Works in DMZ. Multiplayer is less consistent (Ninja perk, constant chaos).",
+    "device": "Art Tune +",
+    "channels": 16,
+    "folder": "MW4\\V1",
+    "filePattern": "MW4_V1_16ch_{style}-{gun}Gun_HRIR-{head}.txt",
+    "targetFile": "MW4_Target_V1.txt",
+    "flatEq": "eq\\Flat_EQ.txt",
+    "squigUrl": "https://gadgetrytech.squig.link/",
+    "defaults": { "style": "TheaterClear", "gun": "UltraLo", "head": "KU100" },
+    "styles": [
+      { "id": "TheaterClear", "name": "Theater Clear", "tag": "Start here",
+        "text": "The game's own mix with footsteps brought forward. Quiet moments stay quiet, far sounds stay far, deep bass is held back so steps sit in a cleaner space. Calm around gunfire and explosions." },
+      { "id": "TheaterClearPlus", "name": "Theater Clear+", "tag": "",
+        "text": "Theater Clear pushed harder: footsteps about 3 to 4 dB further out with a fast, hard edge. Other sharp sounds jump out too and rapid gunfire can flutter." },
+      { "id": "ClassicLE", "name": "Classic LE", "tag": "",
+        "text": "The old Loudness Equalization feel, rebuilt and cleaner. When you fire, only the front and your own gun come down, so the world stays present." },
+      { "id": "ClassicLEPlus", "name": "Classic LE+", "tag": "",
+        "text": "Classic LE with footsteps pushed harder: each step's attack stands out about 2 to 3 dB more, while the room, your own steps and your gun sit about 3 dB lower." },
+      { "id": "ClassicLERaw", "name": "Classic LE Raw", "tag": "",
+        "text": "Classic LE with the world left alone: room tails, explosions and the echo of your own gun come through as the game mixed them." },
+      { "id": "ClassicLERawPlus", "name": "Classic LE Raw+", "tag": "",
+        "text": "Raw with gun levels that each make a real difference: from High down, the echo of your own shots is cut along with your gun." }
+    ],
+    "guns": [
+      { "id": "UltraLo", "name": "Ultra Low", "tag": "Start here", "text": "Your own gun at its quietest. What most people want." },
+      { "id": "Lo", "name": "Low", "tag": "", "text": "Your gun clearly pulled back." },
+      { "id": "Med", "name": "Medium", "tag": "", "text": "The middle setting." },
+      { "id": "Hi", "name": "High", "tag": "", "text": "Just a light touch on your gun." },
+      { "id": "ExtraHi", "name": "Extra High", "tag": "", "text": "Your gun about as loud as the game mixed it (the old Stock)." }
+    ],
+    "heads": [
+      { "id": "KU100", "name": "KU100", "tag": "Default", "text": "The default head model. Start here." },
+      { "id": "KEMAR", "name": "KEMAR", "tag": "", "text": "The head these tunes were tuned on. Try it if front/back or high/low sounds do not place right for you." }
+    ],
+    "gameSettings": [
+      { "name": "Master Volume", "value": "100", "level": "required", "why": "The tune is built for 100. Turn loudness down in Voicemeeter, never here or in the Windows volume mixer." },
+      { "name": "Effects Volume", "value": "100", "level": "required", "why": "Same as Master: the tune needs full signal." },
+      { "name": "Dialogue Volume", "value": "100", "level": "optional", "why": "Personal preference." },
+      { "name": "Music volumes", "value": "0", "level": "optional", "why": "Keeps music from masking footsteps." },
+      { "name": "Game Sound Device", "value": "Art Tune +", "level": "required", "why": "The tune only lives on this device. Anything else plays stock audio." },
+      { "name": "Speaker Output", "value": "Windows Default", "level": "required", "why": "Never 7.1. Windows Default lets the game send all 16 channels." },
+      { "name": "Enhanced Headphone Mode", "value": "Off", "level": "required", "why": "It forces the game into stereo and breaks the tune." },
+      { "name": "Audio Mix", "value": "Headphones", "level": "recommended", "why": "The tune was built around this mix." },
+      { "name": "Mono Audio", "value": "Off", "level": "required", "why": "Mono collapses everything into one speaker." },
+      { "name": "Asymmetrical Hearing Compensation", "value": "Off", "level": "required", "why": "It changes the signal before the tune and breaks it." },
+      { "name": "Reduce Tinnitus Sound", "value": "On", "level": "optional", "why": "Softens the harsh high end a little." },
+      { "name": "Voice Chat Output Device", "value": "Normal Audio", "level": "required", "why": "Keeps teammates' voices out of the tune so they sound natural." }
+    ]
+  }
+}
