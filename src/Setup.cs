@@ -1,4 +1,4 @@
-﻿// ClearSteps - status checks, the official-installer runner, and the self-updater. C# 5 compatible.
+// ClearSteps - status checks, the official-installer runner, and the self-updater. C# 5 compatible.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,7 +37,7 @@ namespace ClearSteps
         static string Http(string url)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            using (var wc = new WebClient()) { wc.Headers["User-Agent"] = "ClearSteps"; wc.Encoding = Encoding.UTF8; return wc.DownloadString(url); }
+            using (var wc = new WebClient()) { wc.Headers["User-Agent"] = "ClearSteps"; wc.Encoding = Encoding.UTF8; return wc.DownloadString(url).TrimStart('\uFEFF'); }
         }
 
         static string Embedded(string name)
