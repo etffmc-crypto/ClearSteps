@@ -21,7 +21,11 @@ namespace ClearSteps
 
     public static class Setup
     {
+#if OLDVER
+        public const string AppVersion = "0.9.0";   // test build only: proves the self-update path
+#else
         public const string AppVersion = "1.0.0";
+#endif
         public const string RepoRaw = "https://raw.githubusercontent.com/etffmc-crypto/ClearSteps/main/";
         public const string RepoPage = "https://github.com/etffmc-crypto/ClearSteps";
 

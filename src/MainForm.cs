@@ -341,6 +341,32 @@ namespace ClearSteps
             if (!Environment.Is64BitOperatingSystem) { MessageBox.Show("ClearSteps needs 64-bit Windows 10 or 11.", "ClearSteps"); return; }
             Application.ThreadException += delegate(object s, ThreadExceptionEventArgs e) { MessageBox.Show(e.Exception.Message, "ClearSteps"); };
             string[] args = Environment.GetCommandLineArgs();
+            if (args.Length > 2 && args[1] == "--selftest")
+            {
+                // Self-check used while building: update check, update download, EQ import. Writes a log and exits.
+                var sb = new System.Text.StringBuilder();
+                try
+                {
+                    Catalog c = Setup.LoadCatalog(true);
+                    sb.AppendLine("version " + Setup.AppVersion + ", catalog v" + c.Version);
+                    Setup.UpdateInfo u = Setup.CheckForUpdate();
+                    sb.AppendLine("update: " + (u == null ? "none" : u.Version + " " + u.Url));
+                    if (args.Length > 3)
+                    {
+                        string inc = ConfigWriter.ImportEq(args[3], "MW4_V1_SelfTest");
+                        TuneChoice t = ConfigWriter.ReadCurrent(c); t.EqInclude = inc;
+                        Status s = Setup.Check(c);
+                        ConfigWriter.Apply(c, t, s.Plus == null ? null : s.Plus.Guid);
+                        sb.AppendLine("eq imported: " + ConfigWriter.ReadCurrent(c).EqInclude);
+                        t.EqInclude = null; ConfigWriter.Apply(c, t, s.Plus == null ? null : s.Plus.Guid);
+                        sb.AppendLine("eq back to: " + (ConfigWriter.ReadCurrent(c).EqInclude ?? "flat"));
+                    }
+                    File.WriteAllText(args[2], sb.ToString());
+                    if (u != null) Setup.ApplyUpdate(u);
+                }
+                catch (Exception ex) { sb.AppendLine("ERROR " + ex); File.WriteAllText(args[2], sb.ToString()); }
+                return;
+            }
             if (args.Length > 2 && args[1] == "--shots")
             {
                 // Self-check used while building: draws every page to a PNG and exits.
