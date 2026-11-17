@@ -275,7 +275,8 @@ namespace ClearSteps
                     Say("Installer finished.");
                 }
                 Setup.ConfigureDevices(cat, Say);
-                Say("This PC is set up. Next: pick your headset.");
+                Say("This PC is set up. The old Art Tune device is now disabled on purpose: leave it off.");
+                Say("Next: open the Headset page and pick what you listen on.");
             }, true);
         }
 

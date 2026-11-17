@@ -106,11 +106,11 @@ namespace ClearSteps
                 list.Add(new Check { Id = "eapo", Title = "Equalizer APO on Art Tune +", State = st.EapoOnPlus ? Health.Ok : Health.Warn, AutoFix = !st.EapoOnPlus,
                     Detail = st.EapoOnPlus ? "Attached, enhancements on." : "Not attached, so the tune is bypassed and you hear stock audio." });
                 list.Add(new Check { Id = "old", Title = "Old Art Tune device", State = st.OldDisabled ? Health.Ok : Health.Warn, AutoFix = !st.OldDisabled,
-                    Detail = st.OldDisabled ? "Disabled, as MW4 needs." : "Still enabled. MW4 needs only Art Tune +." });
+                    Detail = st.OldDisabled ? "Disabled on purpose. MW4 uses only Art Tune +, so leave this one off and never make it your Windows default." : "Still enabled. MW4 uses only Art Tune +, so ClearSteps switches this one off." });
             }
 
             if (!Voicemeeter.IsInstalled) list.Add(new Check { Id = "mixer", Title = "Voicemeeter", State = Health.Off, Detail = st.Stack ? "Not installed (you kept your own mixer). Route Art Tune Unified Output to your headset there." : "Appears after setup." });
-            else if (!st.Mixer) list.Add(new Check { Id = "mixer", Title = "Voicemeeter", State = Health.Warn, NeedsHeadset = true, Detail = "No headset picked yet, so the tuned sound goes nowhere." });
+            else if (!st.Mixer) list.Add(new Check { Id = "mixer", Title = "Voicemeeter", State = Health.Warn, NeedsHeadset = true, Detail = "No headset picked yet, so the tuned sound goes nowhere. Open the Headset page and pick what you listen on." });
             else
             {
                 bool run = MixerRunning();
@@ -170,7 +170,7 @@ namespace ClearSteps
                         int hr = Audio.SetFormat(st.Plus.Id, 16, 24, 48000, 0);
                         done.Add(hr == 0 ? "Set Art Tune + back to 16 channel, 24 bit, 48000 Hz." : "Could not set the Art Tune + format (0x" + hr.ToString("X8") + ").");
                     }
-                    else if (c.Id == "old") { Audio.SetEnabled(st.Old.Id, false); done.Add("Disabled the old Art Tune device."); }
+                    else if (c.Id == "old") { Audio.SetEnabled(st.Old.Id, false); done.Add("Disabled the old Art Tune device on purpose (MW4 uses only Art Tune +). Leave it off and do not make it your Windows default."); }
                     else if (c.Id == "mixer") { Process.Start(new ProcessStartInfo(Voicemeeter.Exe) { WorkingDirectory = Voicemeeter.InstallDir, UseShellExecute = true }); done.Add("Started Voicemeeter."); }
                     else if (c.Id == "tune")
                     {

@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "url": "https://github.com/etffmc-crypto/ClearSteps/raw/main/dist/ClearSteps.exe",
-  "notes": "Sharper on every screen: fixes clipped text and tiny buttons on high-resolution displays. New dashboard that shows the sound path from the game to your headset and where it is broken. Dark scrollbars, keyboard navigation, notifications when something is fixed, and a proper app icon."
+  "notes": "Clearer wording after setup: the old Art Tune device is disabled on purpose (MW4 uses only Art Tune +), and the app now tells you plainly to pick what you listen on from the Headset page."
 }

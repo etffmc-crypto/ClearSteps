@@ -6,5 +6,5 @@ using System.Reflection;
 [assembly: AssemblyDescription("Free, unofficial setup helper and guardian for ArtIsWar's free MW4 audio tune")]
 [assembly: AssemblyCompany("ClearSteps (fan-made, not affiliated with ArtIsWar)")]
 [assembly: AssemblyCopyright("GPL-3.0. Tune, engine and installer by ArtIsWar.")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.3.1.0")]
+[assembly: AssemblyFileVersion("1.3.1.0")]
