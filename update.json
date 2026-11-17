@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "url": "https://github.com/etffmc-crypto/ClearSteps/raw/main/dist/ClearSteps.exe",
-  "notes": "New: Fix a problem. A built-in troubleshooter that finds where the sound stops, repairs it and plays a test sound to prove it. Also fixes the sidebar icons and makes Voicemeeter remember your headset after a crash."
+  "notes": "Sharper on every screen: fixes clipped text and tiny buttons on high-resolution displays. New dashboard that shows the sound path from the game to your headset and where it is broken. Dark scrollbars, keyboard navigation, notifications when something is fixed, and a proper app icon."
 }

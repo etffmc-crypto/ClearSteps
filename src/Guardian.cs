@@ -20,6 +20,7 @@ namespace ClearSteps
         public static bool AutoFixOn = true, KeepInTray = true, StartWithWindows = false;
         public static string Headset = "";          // the Voicemeeter output the user picked, so we can tell when it goes missing
         public static bool HeadsetPresent = true;   // result of the last audit
+        public static string Window = "";           // last window position: x,y,w,h,maximized
         static string SettingsFile { get { return Path.Combine(Setup.DataDir, "settings.ini"); } }
         public static string LogFile { get { return Path.Combine(Setup.DataDir, "guardian.log"); } }
         const string TaskName = "ClearSteps Guardian";
@@ -33,6 +34,7 @@ namespace ClearSteps
                     int eq = l.IndexOf('='); if (eq < 1) continue;
                     string[] kv = { l.Substring(0, eq), l.Substring(eq + 1) }; bool v = kv[1].Trim() == "1";
                     if (kv[0] == "headset") { Headset = kv[1].Trim(); continue; }
+                    if (kv[0] == "window") { Window = kv[1].Trim(); continue; }
                     if (kv[0] == "autofix") AutoFixOn = v; else if (kv[0] == "tray") KeepInTray = v; else if (kv[0] == "autostart") StartWithWindows = v;
                 }
             }
@@ -40,7 +42,7 @@ namespace ClearSteps
         }
         public static void SaveSettings()
         {
-            try { File.WriteAllLines(SettingsFile, new[] { "autofix=" + (AutoFixOn ? 1 : 0), "tray=" + (KeepInTray ? 1 : 0), "autostart=" + (StartWithWindows ? 1 : 0), "headset=" + Headset }); } catch { }
+            try { File.WriteAllLines(SettingsFile, new[] { "autofix=" + (AutoFixOn ? 1 : 0), "tray=" + (KeepInTray ? 1 : 0), "autostart=" + (StartWithWindows ? 1 : 0), "headset=" + Headset, "window=" + Window }); } catch { }
         }
 
         /// Start with Windows uses a scheduled task so the app can start with admin rights without a prompt at every logon.
