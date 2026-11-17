@@ -18,6 +18,8 @@ namespace ClearSteps
     {
         // ---- settings ----
         public static bool AutoFixOn = true, KeepInTray = true, StartWithWindows = false;
+        public static string Headset = "";          // the Voicemeeter output the user picked, so we can tell when it goes missing
+        public static bool HeadsetPresent = true;   // result of the last audit
         static string SettingsFile { get { return Path.Combine(Setup.DataDir, "settings.ini"); } }
         public static string LogFile { get { return Path.Combine(Setup.DataDir, "guardian.log"); } }
         const string TaskName = "ClearSteps Guardian";
@@ -28,7 +30,9 @@ namespace ClearSteps
             {
                 foreach (string l in File.ReadAllLines(SettingsFile))
                 {
-                    string[] kv = l.Split('='); if (kv.Length != 2) continue; bool v = kv[1].Trim() == "1";
+                    int eq = l.IndexOf('='); if (eq < 1) continue;
+                    string[] kv = { l.Substring(0, eq), l.Substring(eq + 1) }; bool v = kv[1].Trim() == "1";
+                    if (kv[0] == "headset") { Headset = kv[1].Trim(); continue; }
                     if (kv[0] == "autofix") AutoFixOn = v; else if (kv[0] == "tray") KeepInTray = v; else if (kv[0] == "autostart") StartWithWindows = v;
                 }
             }
@@ -36,7 +40,7 @@ namespace ClearSteps
         }
         public static void SaveSettings()
         {
-            try { File.WriteAllLines(SettingsFile, new[] { "autofix=" + (AutoFixOn ? 1 : 0), "tray=" + (KeepInTray ? 1 : 0), "autostart=" + (StartWithWindows ? 1 : 0) }); } catch { }
+            try { File.WriteAllLines(SettingsFile, new[] { "autofix=" + (AutoFixOn ? 1 : 0), "tray=" + (KeepInTray ? 1 : 0), "autostart=" + (StartWithWindows ? 1 : 0), "headset=" + Headset }); } catch { }
         }
 
         /// Start with Windows uses a scheduled task so the app can start with admin rights without a prompt at every logon.
@@ -119,6 +123,18 @@ namespace ClearSteps
             }
             else list.Add(new Check { Id = "tune", Title = "Active tune", State = Health.Off, Detail = "Appears after setup." });
 
+            if (st.Mixer && RouteChecked && !RouteOk)
+                list.Add(new Check { Id = "route", Title = "Voicemeeter routing", State = Health.Warn, AutoFix = Headset != "", NeedsHeadset = Headset == "",
+                    Detail = "Voicemeeter has lost its devices (this happens if it crashed or was force-closed), so the tune reaches nothing." });
+            HeadsetPresent = true;
+            if (st.Mixer && Headset != "")
+            {
+                string want = Headset;
+                Endpoint hs = Audio.List().Find(delegate(Endpoint x) { return x.IsRender && string.Equals(x.FullName, want, StringComparison.OrdinalIgnoreCase); });
+                HeadsetPresent = hs != null && hs.State == 1;
+                list.Add(new Check { Id = "headset", Title = "Your headset", State = HeadsetPresent ? Health.Ok : Health.Warn, AutoFix = hs != null && hs.State == 2,
+                    Detail = HeadsetPresent ? want + " is connected." : hs == null ? want + " is gone from Windows. If you replaced it, pick the new one on the Headset page." : hs.State == 2 ? want + " is disabled in Windows." : want + " is unplugged or switched off. It reconnects by itself when it comes back." });
+            }
             if (st.Normal != null && st.Mixer)
             {
                 bool isDef = string.Equals(Audio.DefaultId(true, 0), st.Normal.Id, StringComparison.OrdinalIgnoreCase);
@@ -140,7 +156,8 @@ namespace ClearSteps
                 {
                     if (c.Id == "eapo")
                     {
-                        if (game) { done.Add("Equalizer APO needs re-attaching, but the game is running; it will be fixed when you close the game."); continue; }
+                        if (game) { if (!deferredSaid) { deferredSaid = true; done.Add("Equalizer APO needs re-attaching, but the game is running; it will be fixed when you close the game."); } continue; }
+                        deferredSaid = false;
                         say("Re-attaching Equalizer APO to Art Tune + (sound drops for a few seconds)...");
                         Eapo.InstallOn(st.Plus.Guid); Eapo.RestartAudio(); done.Add("Re-attached Equalizer APO to Art Tune +.");
                         Audio.SetFormat(st.Plus.Id, 16, 24, 48000, 0);
@@ -160,12 +177,41 @@ namespace ClearSteps
                         if (t.EqInclude != null && !File.Exists(Path.Combine(Paths.ConfigDir, t.EqInclude))) t.EqInclude = null;
                         ConfigWriter.Apply(cat, t, st.Plus == null ? null : st.Plus.Guid); done.Add("Reloaded the tune: " + Describe(cat, t) + ".");
                     }
+                    else if (c.Id == "route")
+                    {
+                        say("Voicemeeter lost its routing. Setting it up again for " + Headset + "...");
+                        Voicemeeter.Configure(Headset, Voicemeeter.Wdm, say);
+                        if (st.Normal != null) Audio.SetDefault(st.Normal.Id, true);
+                        RouteOk = true; done.Add("Rebuilt the Voicemeeter routing to " + Headset + ".");
+                    }
+                    else if (c.Id == "headset")
+                    {
+                        string want = Headset;
+                        Endpoint hs = Audio.List().Find(delegate(Endpoint x) { return x.IsRender && string.Equals(x.FullName, want, StringComparison.OrdinalIgnoreCase); });
+                        if (hs != null) { Audio.SetEnabled(hs.Id, true); done.Add("Re-enabled your headset in Windows."); }
+                    }
                     else if (c.Id == "default") { Audio.SetDefault(st.Normal.Id, true); done.Add("Set Windows default playback back to Normal Audio."); }
                 }
                 catch (Exception ex) { done.Add("Could not fix " + c.Title + ": " + ex.Message); }
             }
-            foreach (string d in done) Log("Fix: " + d);
             return done;
+        }
+
+        static bool deferredSaid;
+        public static bool RouteChecked, RouteOk = true;
+
+        /// Asks Voicemeeter what it is really routing (a little slower than the other checks, so not done on every beat).
+        public static void CheckRoute()
+        {
+            try
+            {
+                if (!Voicemeeter.IsInstalled || !Voicemeeter.IsRunning) return;
+                string[] r = Voicemeeter.ReadRoute();
+                RouteOk = r[0].StartsWith("Art Tune Unified Output", StringComparison.OrdinalIgnoreCase) && r[1] != "";
+                RouteChecked = true;
+                if (RouteOk && Headset == "") { Headset = r[1]; SaveSettings(); }
+            }
+            catch { }
         }
 
         public static string Summary(List<Check> checks)

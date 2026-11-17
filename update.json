@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "url": "https://github.com/etffmc-crypto/ClearSteps/raw/main/dist/ClearSteps.exe",
-  "notes": "New look that fills the window, plus the Guardian: a health check that watches your audio setup from the tray and fixes what Windows knocks out."
+  "notes": "New: Fix a problem. A built-in troubleshooter that finds where the sound stops, repairs it and plays a test sound to prove it. Also fixes the sidebar icons and makes Voicemeeter remember your headset after a crash."
 }

@@ -126,6 +126,36 @@ namespace ClearSteps
             return list;
         }
 
+        [DllImport(D)] static extern int VBVMR_GetLevel(int type, int channel, out float value);
+        [DllImport(D)] static extern int VBVMR_GetParameterFloat([MarshalAs(UnmanagedType.LPStr)] string name, out float value);
+
+        public static bool IsRunning { get { return Running().Length > 0; } }
+
+        /// Runs a block while logged in to a Voicemeeter that is already running (starts it if needed).
+        public static T With<T>(Func<T> work)
+        {
+            if (!IsInstalled) throw new InvalidOperationException("Voicemeeter is not installed.");
+            bool wasRunning = IsRunning;
+            if (wasRunning)
+            {
+                Load();
+                if (VBVMR_Login() < 0) throw new InvalidOperationException("Voicemeeter login failed.");
+                int type; for (int i = 0; i < 25 && VBVMR_GetVoicemeeterType(out type) != 0; i++) Thread.Sleep(100);
+                Thread.Sleep(250); Drain();
+            }
+            else Connect(delegate(string s) { });
+            try { return work(); } finally { VBVMR_Logout(); }
+        }
+
+        public static string GetS(string name) { Drain(); var b = new StringBuilder(1024); return VBVMR_GetParameterStringW(name, b) == 0 ? b.ToString() : ""; }
+        public static float GetF(string name) { Drain(); float v; return VBVMR_GetParameterFloat(name, out v) == 0 ? v : float.NaN; }
+        public static bool SetF(string name, float v) { return VBVMR_SetParameterFloat(name, v) == 0; }
+        public static bool SetS(string name, string v) { return VBVMR_SetParameterStringW(name, v) == 0; }
+        /// type 1 = strip input after the fader, 3 = bus output. Returns a linear level (0 = silence).
+        public static float Level(int type, int channel) { VBVMR_IsParametersDirty(); float v; return VBVMR_GetLevel(type, channel, out v) == 0 ? v : 0f; }
+        public static void RestartEngine() { With(delegate { SetF("Command.Restart", 1f); Thread.Sleep(1200); return 0; }); }
+        public static string CurrentOutput() { return With(delegate { return GetS("Bus[0].device.name"); }); }
+
         static void Check(int rc, string what) { if (rc != 0) throw new InvalidOperationException("Voicemeeter refused: " + what + " (" + rc + ")"); }
 
         /// Applies the whole guide configuration. headsetName must be a name from OutputDevices(); type is Wdm or Ks.
@@ -165,15 +195,29 @@ namespace ClearSteps
                 VBVMR_SetParameterFloat("Strip[2].Mute", 0f);
                 VBVMR_SetParameterFloat("Bus[0].Mute", 0f);
                 VBVMR_SetParameterFloat("Bus[0].Gain", 0f);
-                Thread.Sleep(500); Drain();
-                VBVMR_SetParameterFloat("Command.Restart", 1f);
-                Thread.Sleep(1500); Drain();
+                Thread.Sleep(800); Drain();
+                // Voicemeeter only writes its settings file on a clean exit. Close it properly now so a later crash,
+                // forced close or power cut cannot lose the routing, then bring it straight back.
+                VBVMR_SetParameterFloat("Command.Shutdown", 1f);
+                Thread.Sleep(400);
+            }
+            finally { VBVMR_Logout(); }
+            for (int i = 0; i < 60 && Running().Length > 0; i++) Thread.Sleep(200);
+            say("Saved. Restarting Voicemeeter...");
+            Connect(delegate(string s) { });
+            try
+            {
                 var a = new StringBuilder(1024); var b = new StringBuilder(1024);
+                Drain();
                 VBVMR_GetParameterStringW("Strip[0].device.name", a);
                 VBVMR_GetParameterStringW("Bus[0].device.name", b);
+                if (a.Length == 0 || b.Length == 0) throw new InvalidOperationException("Voicemeeter did not keep the routing (input \"" + a + "\", output \"" + b + "\").");
                 return "input=" + a + " | output=" + b;
             }
             finally { VBVMR_Logout(); }
         }
+
+        /// What Voicemeeter is actually routing right now: [0] input 1 device, [1] output A1 device ("" when none).
+        public static string[] ReadRoute() { return With(delegate { return new[] { GetS("Strip[0].device.name"), GetS("Bus[0].device.name") }; }); }
     }
 }

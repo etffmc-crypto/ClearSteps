@@ -99,6 +99,16 @@ namespace ClearSteps
             finally { RegCloseKey(key); }
         }
 
+        /// Detaches Equalizer APO from one render endpoint (used by the self-test to prove the guardian re-attaches it).
+        public static void RemoveFrom(string guid)
+        {
+            IntPtr key;
+            int rc = RegOpenKeyExW(HKLM, RenderRoot + guid + @"\FxProperties", 0, KEY_SET_VALUE | KEY_QUERY_VALUE | KEY_WOW64_64KEY, out key);
+            if (rc != 0) throw new Win32Exception(rc, "Could not open the device's effects key for writing");
+            try { RegDeleteValueW(key, FxGuid + ",1"); RegDeleteValueW(key, FxGuid + ",2"); }
+            finally { RegCloseKey(key); }
+        }
+
         static void SetSz(IntPtr key, string name, string value)
         {
             byte[] data = Encoding.Unicode.GetBytes(value + "\0");

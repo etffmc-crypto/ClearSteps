@@ -32,6 +32,28 @@ namespace ClearSteps
                     Say("set format hr=0x" + Audio.SetFormat(plus.Id, 16, 24, 48000, 0).ToString("X8"));
                     if (art != null) Say("disable Art Tune hr=0x" + Audio.SetEnabled(art.Id, false).ToString("X8"));
                 }
+                if (cmd == "break")
+                {
+                    // Self-test: knock out everything the guardian is supposed to put back.
+                    bool withEapo = args.Length > 2 && args[2] == "eapo";
+                    Say("format->2ch hr=0x" + Audio.SetFormat(plus.Id, 2, 24, 48000, 3).ToString("X8"));
+                    if (art != null) Say("enable old Art Tune hr=0x" + Audio.SetEnabled(art.Id, true).ToString("X8"));
+                    Endpoint spk = eps.Find(delegate(Endpoint e) { return e.IsRender && e.State == 1 && e.Adapter.IndexOf("VB-Audio", StringComparison.OrdinalIgnoreCase) < 0; });
+                    if (spk != null) Say("default->" + spk.Name + " hr=0x" + Audio.SetDefault(spk.Id, true).ToString("X8"));
+                    foreach (System.Diagnostics.Process p in System.Diagnostics.Process.GetProcessesByName("voicemeeter_x64")) { try { p.Kill(); Say("killed Voicemeeter"); } catch (Exception ex) { Say("kill vm: " + ex.Message); } }
+                    string[] lines = File.ReadAllLines(Paths.ConfigFile);
+                    for (int i = 0; i < lines.Length; i++) if (lines[i].IndexOf("_16ch_", StringComparison.OrdinalIgnoreCase) >= 0 && lines[i].StartsWith("Include:")) { lines[i] = @"Include: ArtTuneDB\library\"; Say("blanked tune line"); }
+                    File.WriteAllLines(Paths.ConfigFile, lines);
+                    if (withEapo) { Eapo.RemoveFrom(plus.Guid); Say("detached Equalizer APO: installed now=" + Eapo.IsInstalledOn(plus.Guid)); }
+                    return 0;
+                }
+                if (cmd == "doctor") { Guardian.LoadSettings(); Doctor.Run(args.Length > 2 ? args[2] : "checkup", cat, Say); return 0; }
+                if (cmd == "report") { Guardian.LoadSettings(); Say(Doctor.Report(cat)); return 0; }
+                if (cmd == "audit")
+                {
+                    Status s2; foreach (Check c in Guardian.Audit(cat, out s2)) Say((c.State == Health.Ok ? "OK    " : c.State == Health.Off ? "n/a   " : "BROKEN") + " " + c.Id + ": " + c.Detail);
+                    return 0;
+                }
                 if (cmd == "vmlist") { foreach (VmDevice d in Voicemeeter.OutputDevices()) Say(d.Type + "  " + d.Name); return 0; }
                 if (cmd == "vm")
                 {
@@ -39,6 +61,7 @@ namespace ClearSteps
                     VmDevice pick = Voicemeeter.OutputDevices().Find(delegate(VmDevice d) { return d.Type == Voicemeeter.Wdm && d.Name.IndexOf(want, StringComparison.OrdinalIgnoreCase) >= 0 && d.Name.IndexOf("VB-Audio", StringComparison.OrdinalIgnoreCase) < 0; });
                     if (pick == null) { Say("FAIL: no output matching " + want); return 2; }
                     Say("result: " + Voicemeeter.Configure(pick.Name, pick.Type, Say));
+                    Guardian.LoadSettings(); Guardian.Headset = pick.Name; Guardian.SaveSettings();
                     Say("default before: " + Audio.DefaultId(true, 0));
                     Endpoint normal = eps.Find(delegate(Endpoint e) { return e.IsRender && e.Name == "Normal Audio" && e.State == 1; });
                     if (normal != null) Say("set default Normal Audio hr=0x" + Audio.SetDefault(normal.Id, true).ToString("X8"));

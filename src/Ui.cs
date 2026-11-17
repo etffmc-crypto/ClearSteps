@@ -260,7 +260,7 @@ namespace ClearSteps
             Graphics g = e.Graphics; g.Clear(Under); g.SmoothingMode = SmoothingMode.AntiAlias;
             Color c = State == Health.Ok ? Theme.Accent : State == Health.Warn ? Theme.Warn : State == Health.Bad ? Theme.Bad : Theme.Border;
             using (var b = new SolidBrush(Color.FromArgb(46, c))) g.FillEllipse(b, 0, 9, 30, 30);
-            string mark = State == Health.Ok ? "" : State == Health.Off ? "" : "";
+            string mark = ((char)(State == Health.Ok ? 0xE73E : State == Health.Off ? 0xE738 : 0xE783)).ToString();
             TextRenderer.DrawText(g, mark, new Font("Segoe MDL2 Assets", 10f), new Rectangle(0, 9, 31, 31), c, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
             int textW = Width - 52 - (Fix.Visible ? Fix.Width + 16 : 0);
             int th = Theme.TextHeight(Title, Theme.Bold, textW);

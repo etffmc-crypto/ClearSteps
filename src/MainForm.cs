@@ -1,4 +1,4 @@
-﻿// ClearSteps - the window: a guardian dashboard plus tune, headset, EQ and game pages. C# 5 compatible WinForms.
+// ClearSteps - the window: a guardian dashboard plus tune, headset, EQ and game pages. C# 5 compatible WinForms.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,8 +42,8 @@ namespace ClearSteps
                 TextRenderer.DrawText(e.Graphics, "ClearSteps", new Font("Segoe UI Semibold", 16f), new Point(68, 22), Theme.Ink);
                 TextRenderer.DrawText(e.Graphics, "MW4 footstep audio", Theme.Small, new Point(70, 50), Theme.Dim);
             };
-            string[] glyphs = { "î ½", "î£–", "îŸ¶", "î§©", "îŸ¼", "î¥†" };
-            string[] names = { "Guardian", "Tune", "Headset", "Headphone EQ", "Game settings", "Updates and credits" };
+            string[] glyphs = { G(0xE83D), G(0xE8D6), G(0xE7F6), G(0xE9E9), G(0xE7FC), G(0xE90F), G(0xE946) };
+            string[] names = { "Guardian", "Tune", "Headset", "Headphone EQ", "Game settings", "Fix a problem", "Updates and credits" };
             for (int i = 0; i < names.Length; i++)
             {
                 int idx = i; var n = new NavItem(glyphs[i], names[i]);
@@ -56,7 +56,7 @@ namespace ClearSteps
 
             host = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Bg };
             Controls.Add(host); Controls.Add(side);
-            pages.Add(BuildGuardian()); pages.Add(BuildTune()); pages.Add(BuildHeadset()); pages.Add(BuildEq()); pages.Add(BuildGame()); pages.Add(BuildAbout());
+            pages.Add(BuildGuardian()); pages.Add(BuildTune()); pages.Add(BuildHeadset()); pages.Add(BuildEq()); pages.Add(BuildGame()); pages.Add(BuildDoctor()); pages.Add(BuildAbout());
             foreach (Page p in pages) { p.Dock = DockStyle.Fill; p.Visible = false; host.Controls.Add(p); }
 
             tray = new NotifyIcon { Icon = Icon, Text = "ClearSteps", Visible = true };
@@ -75,6 +75,7 @@ namespace ClearSteps
                 RefreshState(); ShowPage(0); heartbeat.Start();
                 Guardian.Log("Started " + Setup.AppVersion + " | " + Guardian.Summary(checks));
                 Background(delegate { CheckOnline(true); }, false);
+                if (Guardian.Headset == "" && st.Mixer) Background(delegate { Guardian.Headset = Voicemeeter.CurrentOutput(); Guardian.SaveSettings(); }, false);
                 if (startHidden) BeginInvoke((Action)delegate { Hide(); });
             };
             FormClosing += delegate(object s, FormClosingEventArgs e)
@@ -123,7 +124,19 @@ namespace ClearSteps
             if (busy) return;
             bool game = Guardian.GameRunning;
             if (game != lastGame) { lastGame = game; Say(game ? "Call of Duty started." : "Call of Duty closed."); }
+            if (++beatNo % 3 == 1) { Background(delegate { Guardian.CheckRoute(); }, false); return; }
             Status s; List<Check> c = Guardian.Audit(cat, out s);
+            if (Guardian.HeadsetPresent != headsetWasPresent)
+            {
+                headsetWasPresent = Guardian.HeadsetPresent;
+                if (!headsetWasPresent) Say("Your headset (" + Guardian.Headset + ") went away. Waiting for it to come back.");
+                else
+                {
+                    Say("Your headset is back. Reconnecting the tune to it...");
+                    Background(delegate { Thread.Sleep(2500); Voicemeeter.RestartEngine(); Say("Reconnected."); }, false);
+                    return;
+                }
+            }
             bool needs = c.Exists(delegate(Check x) { return x.AutoFix && x.State != Health.Ok; });
             if (needs && Guardian.AutoFixOn)
             {
@@ -159,11 +172,13 @@ namespace ClearSteps
             heroSub = hero.Add(new TextBlock("", Theme.Body, Theme.Dim));
             var hb = hero.Add(new Row());
             heroMain = hb.Add(new Btn("Set up this PC", true)); heroRecheck = hb.Add(new Btn("Check again", false));
+            Btn heroDoctor = hb.Add(new Btn("Something sounds wrong", false));
+            heroDoctor.Click += delegate { ShowPage(5); };
             heroMain.Click += delegate { MainAction(); };
             heroRecheck.Click += delegate { Beat(true); };
 
             healthCard = NewCard(p, "Health check"); healthCard.Gap = 4;
-            string[] ids = { "tools", "data", "device", "eapo", "old", "mixer", "tune", "default" };
+            string[] ids = { "tools", "data", "device", "eapo", "old", "mixer", "route", "headset", "tune", "default" };
             foreach (string id in ids)
             {
                 string key = id; var r = healthCard.Add(new HealthRow()); r.Visible = false; rows[id] = r;
@@ -253,6 +268,7 @@ namespace ClearSteps
                 t.Click += delegate { foreach (Control x in owner.Items) { ((Tile)x).Selected = x == me; x.Invalidate(); } ApplyTune(); };
             }
         }
+        static string G(int code) { return ((char)code).ToString(); }
         static void SelectTile(Grid g, string id) { foreach (Control x in g.Items) { var t = (Tile)x; bool sel = (string)t.Data == id; if (t.Selected != sel) { t.Selected = sel; t.Invalidate(); } } }
         static string Selected(Grid g) { foreach (Control x in g.Items) if (((Tile)x).Selected) return (string)((Tile)x).Data; return null; }
 
@@ -311,6 +327,7 @@ namespace ClearSteps
                     Voicemeeter.Configure(d.Name, d.Type, Say);
                     Status s = Setup.Check(cat);
                     if (s.Normal != null) Audio.SetDefault(s.Normal.Id, true);
+                    Guardian.Headset = d.Name; Guardian.SaveSettings(); headsetWasPresent = true;
                     Say("Headset set: " + d.Name);
                     Ui(delegate { headsetState.Set("Done. Tuned game sound and normal sound both go to " + d.Name + ". If you ever hear crackling, open Voicemeeter and choose the same headset under A1 as KS instead of WDM.", Theme.Accent); });
                 }, true);
@@ -374,6 +391,37 @@ namespace ClearSteps
             var g = p.Root.Add(new Grid { MinCell = 340, MaxCols = 3 });
             foreach (GameSetting s in cat.GameSettings)
                 g.Add(new Tile { Title = s.Name + ":  " + s.Value, Tag2 = s.Level.ToUpperInvariant(), TagColor = s.Level == "required" ? Theme.Warn : Theme.Dim, Body = s.Why, Clickable = false, Cursor = Cursors.Default });
+            return p;
+        }
+
+        // ---- page: fix a problem (the built-in IT guy) ----
+        bool headsetWasPresent = true; TextBox doctorBox; int beatNo;
+
+        Page BuildDoctor()
+        {
+            Page p = NewPage("Fix a problem", "Tell me what is wrong and I will work through it like an IT person would: check each link in the chain, fix what I can, and tell you plainly what is left. Nothing here costs anything or needs the internet.");
+            var g = p.Root.Add(new Grid { MinCell = 320, MaxCols = 3 });
+            foreach (Symptom s in Doctor.Symptoms)
+            {
+                string id = s.Id;
+                var t = g.Add(new Tile { Title = s.Title, Body = s.Body });
+                t.Click += delegate
+                {
+                    doctorBox.Clear();
+                    Action<string> tell = delegate(string line) { Guardian.Log("Doctor: " + line); Ui(delegate { doctorBox.AppendText(line + "\r\n\r\n"); }); };
+                    Background(delegate { Doctor.Run(id, cat, tell); }, true);
+                };
+            }
+            Card c = NewCard(p, "What I found");
+            doctorBox = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Height = 330, BackColor = Theme.Surface, ForeColor = Theme.Ink, BorderStyle = BorderStyle.None, Font = Theme.Body, Text = "Pick what is wrong above. If you are not sure, start with the full check-up." };
+            c.Add(doctorBox);
+            var r = c.Add(new Row());
+            Btn copy = r.Add(new Btn("Copy a report to send for help", false));
+            copy.Click += delegate
+            {
+                try { Clipboard.SetText(Doctor.Report(cat) + "\r\nTroubleshooter said:\r\n" + doctorBox.Text); MessageBox.Show(this, "A full report is copied. Paste it into a message to whoever set this up for you.", "ClearSteps"); }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message, "ClearSteps"); }
+            };
             return p;
         }
 
@@ -461,7 +509,7 @@ namespace ClearSteps
             tuneState.Set(st.TuneSet ? "Active now: " + Guardian.DescribeTune(cat, st.Current) + (boostDb > 0 ? ", +" + boostDb + " dB" : "") + "." : "Nothing loaded yet.", st.TuneSet ? Theme.Accent : Theme.Dim);
             eqState.Set(st.EqSet ? "Using your headset EQ: " + Path.GetFileNameWithoutExtension(st.Current.EqInclude) : "Using the flat EQ (works, but not matched to your headset).", st.EqSet ? Theme.Accent : Theme.Dim);
             aboutState.Set("ClearSteps " + Setup.AppVersion + "   |   tune library " + (st.LibraryVersion == "" ? "not installed" : st.LibraryVersion) + "   |   tune list " + cat.Updated + "\nUpdates are checked every time the app starts.", Theme.Dim);
-            sideState.Text = (bad == 0 && !needSetup ? "â—  Guardian on" : "â—  Needs attention") + "\n" + (game ? "Call of Duty is running" : "Game not running") + "\nv" + Setup.AppVersion;
+            sideState.Text = G(0x25CF) + (bad == 0 && !needSetup ? "  Guardian on" : "  Needs attention") + "\n" + (game ? "Call of Duty is running" : "Game not running") + "\nv" + Setup.AppVersion;
             sideState.ForeColor = bad == 0 && !needSetup ? Theme.Accent : Theme.Warn;
             UpdateTray();
             if (pages.Count > current) pages[current].Relayout();
@@ -474,6 +522,7 @@ namespace ClearSteps
             if (!Environment.Is64BitOperatingSystem) { MessageBox.Show("ClearSteps needs 64-bit Windows 10 or 11.", "ClearSteps"); return; }
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length > 2 && args[1] == "--selftest") { SelfTest(args); return; }
+            if (args.Length > 2 && args[1] == "--autostart") { Guardian.LoadSettings(); Environment.ExitCode = Guardian.SetAutostart(args[2] == "on") ? 0 : 1; return; }
             if (args.Length > 2 && args[1] == "--shots")
             {
                 // Self-check used while building: draws every page to a PNG at the given size and exits.
